@@ -44,7 +44,7 @@ To test the plugin logic within an agent session without installing it globally,
 
 ```bash
 # Start a sandbox session in the current directory
-antigravity --sandbox .
+agy --sandbox .
 ```
 
 ### Verification Steps inside the Agent:
@@ -64,8 +64,8 @@ When contributing to this plugin, adhere to these technical constraints identifi
 - **OSC 52 Constraints**: The transport is write-only. Never instruct the agent to attempt to read from the clipboard.
 - **Dynamic Slash Command Mapping**: Slash commands for custom skills are dynamically registered by the Antigravity CLI following the format `/<plugin_name>:<skill_name>` (e.g., `/clipboard:copy`). The plugin name is defined in `plugin.json` (under `"name"`), and the skill name is taken directly from the `name:` field in the `SKILL.md` YAML frontmatter.
 - **Help Text Auto-Extraction**: The CLI automatically extracts the command-line help description displayed for the slash command from the `description:` field in the YAML frontmatter of `skills/<skill_name>/SKILL.md`. Keep this description clear and concise, as it is exposed directly to the user in interactive help contexts.
-- **Local Installation Copy (No Symlinks by Default)**: When installing the plugin locally using `agy plugins install .` or `antigravity plugins install .`, the CLI creates a **literal directory copy** under `~/.gemini/antigravity-cli/plugins/clipboard` instead of a symbolic link. (Note: The built-in `agy plugins link` command is specifically for linking custom plugin marketplaces, not individual local development directories). Consequently, subsequent local code changes in your workspace will not reflect in your active shell environment.
-  - *Sandbox Option*: Use **Sandbox Mode** (`antigravity --sandbox .`) for interactive testing with real-time updates.
+- **Local Installation Copy (No Symlinks by Default)**: When installing the plugin locally using `agy plugins install .`, the CLI creates a **literal directory copy** under `~/.gemini/antigravity-cli/plugins/clipboard` instead of a symbolic link. (Note: The built-in `agy plugins link` command is specifically for linking custom plugin marketplaces, not individual local development directories). Consequently, subsequent local code changes in your workspace will not reflect in your active shell environment.
+  - *Sandbox Option*: Use **Sandbox Mode** (`agy --sandbox .`) for interactive testing with real-time updates.
   - *Symlink Development Workaround*: To develop directly against your live workspace in the global shell, you can first install the plugin once (`agy plugins install .`) to register it in `import_manifest.json`, then manually replace the installed folder with a symbolic link:
     ```bash
     # Remove the literal copy and replace it with a symlink to your dev directory
@@ -77,5 +77,5 @@ When contributing to this plugin, adhere to these technical constraints identifi
 
 ## 8. Releasing
 Every release **must** include the standard installation instructions in the release notes:
-- **Install Command**: Use a fully qualified URL: `antigravity plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge`.
-- **Update Command**: `antigravity plugins update clipboard`.
+- **Install Command**: Use a fully qualified URL: `agy plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge`.
+- **Update Command**: `agy plugins update clipboard`.

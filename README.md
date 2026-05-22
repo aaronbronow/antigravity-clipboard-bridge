@@ -55,18 +55,18 @@ If the agent CLI doesn't have access to `/dev/tty`, none of the OS clipboard hel
 ## Installation
 To install the plugin, use the fully qualified URL:
 ```bash
-antigravity plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge
+agy plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge
 ```
 
 ## Update
 To update an existing installation:
 ```bash
-antigravity plugins update clipboard
+agy plugins update clipboard
 ```
 
 Or update all plugins:
 ```bash
-antigravity plugins update --all
+agy plugins update --all
 ```
 
 ## Commands
