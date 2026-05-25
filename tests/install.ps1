@@ -8,22 +8,17 @@ Write-Host "Cleaning up existing plugin installations..." -ForegroundColor Cyan
 foreach ($Path in $TargetPaths) {
     if (Test-Path $Path) {
         Write-Host "Removing existing plugin directory at: $Path" -ForegroundColor Yellow
-        Remove-Item -Path $Path -Recurve -Force
+        Remove-Item -Path $Path -Recurse -Force
     }
 }
 
-# Define the workspace path (checks WSL localhost first, then current execution context)
-$WorkspacePath = "\\wsl.localhost\Ubuntu\home\aaron\dev\antigravity-clipboard-bridge"
-
-if (-not (Test-Path $WorkspacePath)) {
-    # Check if executed inside a Windows directory clone
-    $CurrentDir = Get-Location
-    if (Test-Path "$CurrentDir\gemini-extension.json") {
-        $WorkspacePath = $CurrentDir
-    } else {
-        Write-Host "Could not automatically resolve workspace path." -ForegroundColor Red
-        $WorkspacePath = Read-Host "Please enter the absolute path to your cloned antigravity-clipboard-bridge directory"
-    }
+# Define the workspace path (checks current execution context first)
+$CurrentDir = Get-Location
+if (Test-Path "$CurrentDir\gemini-extension.json") {
+    $WorkspacePath = $CurrentDir
+} else {
+    Write-Host "Could not automatically resolve workspace path from the current directory." -ForegroundColor Red
+    $WorkspacePath = Read-Host "Please enter the absolute path to your cloned antigravity-clipboard-bridge directory"
 }
 
 Write-Host "Installing plugin from: $WorkspacePath" -ForegroundColor Cyan

@@ -24,6 +24,9 @@ Execute the helper script at its absolute staged or legacy path:
 
 **Sandbox/Docker Note**: This consolidated helper script natively handles restricted sandboxes and Docker containers by automatically routing copy sequences to the correct bypass channels (e.g., `.clipboard_bypass`). Always attempt to run this script as your first step, regardless of the active shell, SSH, or sandbox status.
 
+> [!IMPORTANT]
+> **Windows Host & Sandbox Bypass**: When executing platform-native clipboard commands or unified helper scripts on Windows hosts, **always request unsandboxed command execution** (e.g., specifying `BypassSandbox: true` in your command tool configuration, or requesting `unsandboxed` host execution). Failing to bypass the sandbox will cause the clipboard operation to succeed silently *inside* the containerized environment without propagating to the user's host clipboard.
+
 **Escaping**: Properly escape any double quotes (`"`) or backticks (`` ` ``) in the text argument to ensure shell execution parses the argument correctly.
 
 ---
@@ -41,17 +44,21 @@ Analyze the `<USER_INFORMATION>` metadata or run quick shell probes to determine
 Invoke the `run_command` tool to execute the appropriate platform-native copy utility:
 
 ##### 1. Windows (PowerShell Shell)
-If the current shell is PowerShell, attempt native copy:
+If the current shell is PowerShell, **always request unsandboxed command execution** (e.g. setting `BypassSandbox: true` or requesting `unsandboxed` host execution) and execute the direct, native copy command. Once host access is approved, this single-line command is extremely stable and reliable:
 ```powershell
 Set-Clipboard -Value "YOUR_TEXT_HERE"
 ```
 
 ###### Troubleshooting PowerShell Failures:
-If the execution encounters any of the following common sandbox/PowerShell failures, apply these targeted remediation strategies:
+If the direct execution fails, identify the specific exception and remediate as follows:
 
-- **Clipboard Lock / Threading Issue (`ExternalException`)**:
-  If `Set-Clipboard` fails with *"Requested Clipboard operation did not succeed"*, this typically indicates a temporary clipboard lock by another process or a lack of STA execution in a background thread.
-  - **Remediation**: Run a robust retry loop in PowerShell to wait out temporary locks:
+- **Drive Mismatch / Container Isolation (`DriveNotFoundException`)**:
+  If the command fails with *"Cannot find drive. A drive with the name 'Microsoft.PowerShell.Core\FileSystem' does not exist"*, this indicates the command was executed inside an isolated container sandbox that has lost its filesystem provider.
+  - **Remediation**: Re-execute the `Set-Clipboard` command on the host by explicitly enabling sandbox bypass/unsandboxed execution.
+
+- **Clipboard Lock / Threading Issue (`ExternalException`) (Fallback Only)**:
+  If `Set-Clipboard` is executed with sandbox bypass but fails with *"Requested Clipboard operation did not succeed"*, a temporary clipboard lock is being held by another host process or there is an active threading issue.
+  - **Remediation**: Run a robust retry loop as a secondary fallback to wait out temporary locks:
     ```powershell
     for ($i=1; $i -le 5; $i++) {
         try {
@@ -62,10 +69,6 @@ If the execution encounters any of the following common sandbox/PowerShell failu
         }
     }
     ```
-
-- **Drive Mismatch / Container Isolation (`DriveNotFoundException`)**:
-  If the command fails with *"Cannot find drive. A drive with the name 'Microsoft.PowerShell.Core\FileSystem' does not exist"*, the sandboxed container session has lost its file system provider.
-  - **Remediation**: Re-execute the `Set-Clipboard` command with the sandbox bypass option enabled (i.e. specifying `BypassSandbox: true` in the tool configuration, or requesting unsandboxed/host command execution). This executes the native command directly on the host machine outside the isolated container, immediately resolving both the filesystem and clipboard access.
 
 
 ##### 2. Windows (CMD or WSL)
