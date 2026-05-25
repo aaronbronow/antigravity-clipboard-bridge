@@ -59,8 +59,8 @@ if [ "$IS_SANDBOX" = false ]; then
             exit 0
         elif command -v powershell.exe >/dev/null; then
             log_debug "Found powershell.exe, using it with UTF-8 encoding"
-            # Set UTF8 encoding to prevent corruption of non-ASCII characters
-            printf "%s" "$input" | powershell.exe -NoProfile -NonInteractive -Command "[Console]::InputEncoding = [System.Text.Encoding]::UTF8; \$input | Set-Clipboard"
+            # Set UTF8 encoding to prevent corruption of non-ASCII characters and use a retry loop to handle clipboard locks
+            printf "%s" "$input" | powershell.exe -NoProfile -NonInteractive -Command "[Console]::InputEncoding = [System.Text.Encoding]::UTF8; \$content = [Console]::In.ReadToEnd(); for (\$i=1; \$i -le 5; \$i++) { try { Set-Clipboard -Value \$content -ErrorAction Stop; break } catch { Start-Sleep -Milliseconds 100 } }"
             exit 0
         fi
     fi

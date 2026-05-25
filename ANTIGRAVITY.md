@@ -11,3 +11,4 @@ Local development notes for `clipboard`.
 - **OSC 52**: Write-only. Do not attempt to read the clipboard.
 - **Path Resolution**: Use absolute, shell-expandable paths in `SKILL.md` instructions (e.g., `~/.gemini/antigravity-cli/plugins/clipboard/...`) to ensure scripts resolve properly regardless of the current working directory.
 - **Environment Isolation**: In sandboxes (Docker), use the `.clipboard_bypass` listener on the host.
+- **Windows/PowerShell Plugin Path**: On Windows hosts, `agy` may install plugins to `~/.gemini/config/plugins/clipboard/` (equivalent to `c:\Users\abron\.gemini\config\plugins\clipboard\`) instead of `.gemini/antigravity-cli/plugins/clipboard/`. Ensure path resolution handles this gracefully.
