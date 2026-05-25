@@ -76,6 +76,13 @@ When contributing to this plugin, adhere to these technical constraints identifi
 
 
 ## 8. Releasing
+To automate the release process, use the `make release` target. This command automatically verifies that integration tests pass, bumps the version in `gemini-extension.json`, commits and pushes the version bump, creates an annotated git tag, pushes the tag, and creates a GitHub release with the required installation and update instructions.
+
+```bash
+make release VERSION=1.0.2
+```
+
 Every release **must** include the standard installation instructions in the release notes:
 - **Install Command**: Use a fully qualified URL: `agy plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge`.
 - **Update Command**: `agy plugins update clipboard`.
+

@@ -21,3 +21,29 @@ import-upstream:
 
 test:
 	./tests/integration.sh
+
+.PHONY: release
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is required. Usage: make release VERSION=1.0.3"; \
+		exit 1; \
+	fi
+	@echo "Verifying tests pass..."
+	@./tests/integration.sh
+	@echo "Bumping version to $(VERSION) in gemini-extension.json..."
+	@sed -i 's/"version": "[^"]*"/"version": "$(VERSION)"/' gemini-extension.json
+	@echo "Committing version bump..."
+	@git add gemini-extension.json
+	@git commit -m "bump: version $(VERSION)"
+	@echo "Pushing changes to remote..."
+	@git push origin main
+	@echo "Tagging release v$(VERSION)..."
+	@git tag -a v$(VERSION) -m "Release v$(VERSION)"
+	@echo "Pushing tag v$(VERSION) to origin..."
+	@git push origin v$(VERSION)
+	@echo "Creating GitHub release v$(VERSION)..."
+	@printf "Consolidated the clipboard helper script to \`copy_to_clipboard.sh\` to prevent shell/command collisions, modernized the skill instructions, and removed redundant help/setup files.\n\n## Installation & Update Instructions\n\n### 📥 Install Command\n\`\`\`bash\nagy plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge\n\`\`\`\n\n### 🔄 Update Command\n\`\`\`bash\nagy plugins update clipboard\n\`\`\`\n" > .release-notes.tmp
+	@gh release create v$(VERSION) -F .release-notes.tmp -t "v$(VERSION)"
+	@rm -f .release-notes.tmp
+	@echo "Release v$(VERSION) successfully created!"
+
