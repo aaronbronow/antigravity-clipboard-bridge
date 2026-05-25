@@ -16,7 +16,8 @@ import-upstream:
 	# Copy the entire plugin structure directly from the upstream distribution
 	cp -r $(UPSTREAM_DIR)/dist/antigravity-clipboard-bridge/skills ./
 	cp $(UPSTREAM_DIR)/dist/antigravity-clipboard-bridge/plugin.json ./
-	chmod +x skills/copy/copy.sh
+	mv skills/copy/copy.sh skills/copy/copy_to_clipboard.sh
+	chmod +x skills/copy/copy_to_clipboard.sh
 
 test:
 	./tests/integration.sh

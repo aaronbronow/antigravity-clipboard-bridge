@@ -4,5 +4,5 @@
   "description": "Cross-environment clipboard sync for Gemini CLI using OSC 52",
   "author": "Aaron Bronow",
   "repository": "https://github.com/aaronbronow/antigravity-clipboard-bridge",
-  "skills": ["./skills/copy/SKILL.md","./skills/help/SKILL.md"]
+  "skills": ["./skills/copy/SKILL.md"]
 }
