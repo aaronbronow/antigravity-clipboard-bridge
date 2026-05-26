@@ -1,6 +1,6 @@
-# Antigravity Clipboard Bridge
+# Antigravity Clipboard Bridge Skill
 
-An Antigravity plugin that enables cross-environment clipboard synchronization (SSH, WSL, Docker) using safe escape sequences.
+An Antigravity skill that enables cross-environment clipboard synchronization (SSH, WSL, Docker) using safe escape sequences.
 
 ## Why?
 
