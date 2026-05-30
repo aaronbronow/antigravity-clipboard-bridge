@@ -8,26 +8,40 @@ description: Copies text to the clipboard. Supports setting the user's clipboard
 When the user asks to copy text, code blocks, or outputs to the clipboard, follow these steps.
 
 ### Step 1: Execute Consolidated Helper Script (Primary Method)
-To minimize sandbox prompt overhead (avoiding multiple individual permission requests for OS/shell probes and file writes), your **primary** and preferred action is to execute the centralized, pre-configured helper script in a single `run_command` call.
+To minimize sandbox prompt overhead (avoiding multiple individual permission requests for OS/shell probes and file writes) and prevent escaping bugs, your **primary** and preferred action is to execute the centralized helper script.
 
-Execute the helper script at its absolute staged or legacy path:
+#### 1. Execute via Stdin (Recommended for Escape Safety)
+To prevent shell-parsing errors or escaping bugs with double quotes (`"`), single quotes (`'`), or backticks (`` ` ``), always stream the text to copy into the script's standard input (stdin), and capture stderr to read the transport status line:
+
 ```bash
 # Staged plugin path (active)
-~/.gemini/config/plugins/clipboard/skills/copy/copy_to_clipboard.sh "YOUR_TEXT_HERE"
+printf "%s" "YOUR_TEXT_HERE" | ~/.gemini/config/plugins/clipboard/skills/copy/copy_to_clipboard.sh
 
 # Legacy/alternate plugin path
-~/.gemini/antigravity-cli/plugins/clipboard/skills/copy/copy_to_clipboard.sh "YOUR_TEXT_HERE"
+printf "%s" "YOUR_TEXT_HERE" | ~/.gemini/antigravity-cli/plugins/clipboard/skills/copy/copy_to_clipboard.sh
 
-# Cwd/development path (if running in the plugin/workspace directory itself)
-./skills/copy/copy_to_clipboard.sh "YOUR_TEXT_HERE"
+# Cwd/development path
+printf "%s" "YOUR_TEXT_HERE" | ./skills/copy/copy_to_clipboard.sh
 ```
+
+On success, the script writes exactly one line to stderr in the form `Copied via <transport>`, for example:
+- `Copied via PowerShell (WSL → Windows)`
+- `Copied via clip.exe (WSL)`
+- `Copied via pbcopy (macOS)`
+- `Copied via wl-copy (Wayland)`
+- `Copied via xclip (X11)`
+- `Copied via xsel (X11)`
+- `Copied via SSH TTY (OSC 52)`
+- `Copied via sandbox bypass file (.clipboard_bypass)`
+- `Copied via direct TTY (OSC 52)`
+- `Copied via stdout (OSC 52)`
+
+Use this stderr line — not assumptions about the environment — when reporting the transport in Step 3.
 
 **Sandbox/Docker Note**: This consolidated helper script natively handles restricted sandboxes and Docker containers by automatically routing copy sequences to the correct bypass channels (e.g., `.clipboard_bypass`). Always attempt to run this script as your first step, regardless of the active shell, SSH, or sandbox status.
 
 > [!IMPORTANT]
 > **Windows Host & Sandbox Bypass**: When executing platform-native clipboard commands or unified helper scripts on Windows hosts, **always request unsandboxed command execution** (e.g., specifying `BypassSandbox: true` in your command tool configuration, or requesting `unsandboxed` host execution). Failing to bypass the sandbox will cause the clipboard operation to succeed silently *inside* the containerized environment without propagating to the user's host clipboard.
-
-**Escaping**: Properly escape any double quotes (`"`) or backticks (`` ` ``) in the text argument to ensure shell execution parses the argument correctly.
 
 ---
 
@@ -105,4 +119,5 @@ printf "\033]52;c;$(echo -n "YOUR_TEXT_HERE" | base64 | tr -d '\r\n')\007" > .cl
 ---
 
 ### Step 3: Verify and Confirm
-Notify the user that the text has been successfully copied to their clipboard, indicating the copy method utilized (e.g. via the unified helper script or specific fallback transport).
+Notify the user that the text has been successfully copied to their clipboard, indicating the exact copy method reported by the helper script's `Copied via <transport>` stderr output.
+

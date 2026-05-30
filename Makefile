@@ -20,7 +20,11 @@ import-upstream:
 	chmod +x skills/copy/copy_to_clipboard.sh
 
 test:
-	./tests/integration.sh
+	@echo "Running integration checks..."
+	@./tests/integration.sh
+	@echo "Running unit test suite..."
+	@bash ./tests/unit_tests.sh
+
 
 .PHONY: release
 release:
