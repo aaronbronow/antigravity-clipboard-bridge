@@ -1,5 +1,7 @@
 #!/bin/bash
 # Claude & Antigravity Clipboard Bridge - cross-environment copy utility script
+# Version: 1.0.3
+VERSION="1.0.3"
 #
 # Enables seamless copy syncing from local shells, WSL, macOS, Linux, SSH sessions,
 # and containerized Docker sandboxes back to the user's host clipboard.
