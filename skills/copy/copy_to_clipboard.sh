@@ -3,7 +3,7 @@
 # Enable debug mode by creating a file named '.clipboard_debug' in the agent working directory
 # or by setting ABC_DEBUG=1 in the environment.
 DEBUG=false
-if [ -f ".clipboard_debug" ] || [ "$ABC_DEBUG" = "1" ]; then
+if [ -f ".clipboard_debug" ] || [ "$ABC_DEBUG" = "1" ] || [ "$CLAUDE_CLIPBOARD_DEBUG" = "1" ] || [ "$GEMINI_CLIPBOARD_DEBUG" = "1" ] || [ "$CODEX_CLIPBOARD_DEBUG" = "1" ] || [ "$ANTIGRAVITY_CLIPBOARD_DEBUG" = "1" ]; then
     DEBUG=true
     DEBUG_LOG="clipboard_debug.log"
     echo "--- $(date) ---" >> "$DEBUG_LOG"
@@ -166,6 +166,11 @@ if [ -p ".clipboard_pipe" ]; then
     fi
 fi
 
+# If bypass succeeded, exit immediately to avoid falling through and polluting stdout/TTY
+if [ "$BYPASS_SUCCESS" = true ]; then
+    exit 0
+fi
+
 # 4. Direct TTY write (Secondary fallback)
 # In some sandboxes, /dev/tty is writable but isolated. 
 if [ -w "/dev/tty" ]; then
@@ -180,9 +185,13 @@ if [ -w "/dev/tty" ]; then
     fi
 fi
 
-# 5. Last Resort: Stdout
-log_debug "Writing OSC 52 to stdout"
-printf "%s" "$osc52_sequence"
-if [ "$IS_SANDBOX" = false ] && [ "$BYPASS_SUCCESS" = false ]; then
-    echo "Copied via stdout (OSC 52)" >&2
+# 5. Last Resort: Stdout (Only if stdout is a TTY, to prevent polluting captured command outputs)
+if [ -t 1 ]; then
+    log_debug "Writing OSC 52 to stdout"
+    printf "%s" "$osc52_sequence"
+    if [ "$IS_SANDBOX" = false ] && [ "$BYPASS_SUCCESS" = false ]; then
+        echo "Copied via stdout (OSC 52)" >&2
+    fi
+else
+    log_debug "Stdout is not a TTY, skipping stdout OSC 52 write to avoid output pollution"
 fi
