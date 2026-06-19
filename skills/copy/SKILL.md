@@ -17,6 +17,7 @@ node ~/.gemini/config/plugins/abc/skills/copy/copy.js "the text to copy"
 1. **Identify the Content**: Determine the exact text, code block, or command output to be copied.
 2. **Execute Command**: Run the command above using the `run_command` tool.
 3. **Escaping**: Properly escape any double quotes (`"`) or backticks (`` ` ``) in the text argument.
+4. **Verification**: Confirm to the user that the text was copied successfully. If the output indicates it was copied via `.clipboard_bypass` (sandbox bypass file), notify the user that they must run `tail -F .clipboard_bypass > $(tty)` in another terminal on their host machine to complete the copy operation.
 
 ## Agent-to-Agent Communication Protocol
 When you need to send messages to other agents or wait for responses on the Tailscale WebSocket bridge (for multi-agent coordination or long-running dialogues):
