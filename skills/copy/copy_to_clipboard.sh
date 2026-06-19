@@ -134,7 +134,7 @@ fi
 # 2. Secondary: Direct SSH TTY bypass (Reliable for remote background/subshells)
 if [ -n "$SSH_TTY" ] && [ -w "$SSH_TTY" ]; then
     log_debug "Writing OSC 52 to SSH_TTY: $SSH_TTY"
-    if printf "%s" "$osc52_sequence" > "$SSH_TTY" 2>/dev/null; then
+    if printf "%s" "$osc52_sequence" 2>/dev/null > "$SSH_TTY"; then
         echo "Copied via SSH TTY (OSC 52)" >&2
         exit 0
     else
@@ -170,7 +170,7 @@ fi
 # In some sandboxes, /dev/tty is writable but isolated. 
 if [ -w "/dev/tty" ]; then
     log_debug "Writing OSC 52 to /dev/tty"
-    if printf "%s" "$osc52_sequence" > /dev/tty 2>/dev/null; then
+    if printf "%s" "$osc52_sequence" 2>/dev/null > /dev/tty; then
         if [ "$IS_SANDBOX" = false ]; then
             if [ "$BYPASS_SUCCESS" = false ]; then
                 echo "Copied via direct TTY (OSC 52)" >&2
