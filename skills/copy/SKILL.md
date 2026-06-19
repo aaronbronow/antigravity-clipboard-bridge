@@ -4,120 +4,48 @@ description: Copies text to the clipboard. Supports setting the user's clipboard
 ---
 
 # Instructions
-
-When the user asks to copy text, code blocks, or outputs to the clipboard, follow these steps.
-
-### Step 1: Execute Consolidated Helper Script (Primary Method)
-To minimize sandbox prompt overhead (avoiding multiple individual permission requests for OS/shell probes and file writes) and prevent escaping bugs, your **primary** and preferred action is to execute the centralized helper script.
-
-#### 1. Execute via Stdin (Recommended for Escape Safety)
-To prevent shell-parsing errors or escaping bugs with double quotes (`"`), single quotes (`'`), or backticks (`` ` ``), always stream the text to copy into the script's standard input (stdin), and capture stderr to read the transport status line:
+If the user asks to copy text to the clipboard, run the `copy.js` script with the text as an argument:
 
 ```bash
-# Staged plugin path (active)
-printf "%s" "YOUR_TEXT_HERE" | ~/.gemini/config/plugins/clipboard/skills/copy/copy_to_clipboard.sh
-
-# Legacy/alternate plugin path
-printf "%s" "YOUR_TEXT_HERE" | ~/.gemini/antigravity-cli/plugins/clipboard/skills/copy/copy_to_clipboard.sh
-
-# Cwd/development path
-printf "%s" "YOUR_TEXT_HERE" | ./skills/copy/copy_to_clipboard.sh
+node ~/.gemini/config/plugins/abc/skills/copy/copy.js "the text to copy"
 ```
-
-On success, the script writes exactly one line to stderr in the form `Copied via <transport>`, for example:
-- `Copied via PowerShell (WSL → Windows)`
-- `Copied via clip.exe (WSL)`
-- `Copied via pbcopy (macOS)`
-- `Copied via wl-copy (Wayland)`
-- `Copied via xclip (X11)`
-- `Copied via xsel (X11)`
-- `Copied via SSH TTY (OSC 52)`
-- `Copied via sandbox bypass file (.clipboard_bypass)`
-- `Copied via direct TTY (OSC 52)`
-- `Copied via stdout (OSC 52)`
-
-Use this stderr line — not assumptions about the environment — when reporting the transport in Step 3.
-
-**Sandbox/Docker Note**: This consolidated helper script natively handles restricted sandboxes and Docker containers by automatically routing copy sequences to the correct bypass channels (e.g., `.clipboard_bypass`). Always attempt to run this script as your first step, regardless of the active shell, SSH, or sandbox status.
 
 > [!IMPORTANT]
-> **Windows Host & Sandbox Bypass**: When executing platform-native clipboard commands or unified helper scripts on Windows hosts, **always request unsandboxed command execution** (e.g., specifying `BypassSandbox: true` in your command tool configuration, or requesting `unsandboxed` host execution). Failing to bypass the sandbox will cause the clipboard operation to succeed silently *inside* the containerized environment without propagating to the user's host clipboard.
+> **PREFIX ALLOWLIST COMPATIBILITY:** Always run this command directly on a single line. Do **NOT** chain it with semicolons, set variables, or use pipes at the start of the command (e.g. do not run `$text = "..."; node copy.js $text`). This ensures the command starts with the static prefix `node ~/.gemini/.../copy.js` so the user can easily whitelist the command prefix once.
 
----
+### Usage Steps:
+1. **Identify the Content**: Determine the exact text, code block, or command output to be copied.
+2. **Execute Command**: Run the command above using the `run_command` tool.
+3. **Escaping**: Properly escape any double quotes (`"`) or backticks (`` ` ``) in the text argument.
 
-### Step 2: Platform-Native Fallbacks (Use ONLY if the script is missing or fails)
-In the rare event that executing the script fails, is blocked by system policies, or is unavailable, you may fall back to direct, individual environment probes and native commands.
+## Agent-to-Agent Communication Protocol
+When you need to send messages to other agents or wait for responses on the Tailscale WebSocket bridge (for multi-agent coordination or long-running dialogues):
 
-#### A. Detect Active Platform & Shell
-Analyze the `<USER_INFORMATION>` metadata or run quick shell probes to determine:
-- The OS (Windows, macOS, or Linux)
-- The shell environment (PowerShell, CMD, bash, zsh, etc.)
-- Whether you are running in a restricted sandbox/Docker container or remote SSH session.
-
-#### B. Choose and Execute the Best Copy Method
-Invoke the `run_command` tool to execute the appropriate platform-native copy utility:
-
-##### 1. Windows (PowerShell Shell)
-If the current shell is PowerShell, **always request unsandboxed command execution** (e.g. setting `BypassSandbox: true` or requesting `unsandboxed` host execution) and execute the direct, native copy command. Once host access is approved, this single-line command is extremely stable and reliable:
-```powershell
-Set-Clipboard -Value "YOUR_TEXT_HERE"
-```
-
-###### Troubleshooting PowerShell Failures:
-If the direct execution fails, identify the specific exception and remediate as follows:
-
-- **Drive Mismatch / Container Isolation (`DriveNotFoundException`)**:
-  If the command fails with *"Cannot find drive. A drive with the name 'Microsoft.PowerShell.Core\FileSystem' does not exist"*, this indicates the command was executed inside an isolated container sandbox that has lost its filesystem provider.
-  - **Remediation**: Re-execute the `Set-Clipboard` command on the host by explicitly enabling sandbox bypass/unsandboxed execution.
-
-- **Clipboard Lock / Threading Issue (`ExternalException`) (Fallback Only)**:
-  If `Set-Clipboard` is executed with sandbox bypass but fails with *"Requested Clipboard operation did not succeed"*, a temporary clipboard lock is being held by another host process or there is an active threading issue.
-  - **Remediation**: Run a robust retry loop as a secondary fallback to wait out temporary locks:
-    ```powershell
-    for ($i=1; $i -le 5; $i++) {
-        try {
-            Set-Clipboard -Value "YOUR_TEXT_HERE" -ErrorAction Stop
-            break
-        } catch {
-            Start-Sleep -Milliseconds 100
-        }
-    }
-    ```
-
-
-##### 2. Windows (CMD or WSL)
-If running under a standard Windows CMD shell or inside a WSL environment with host access:
+### 1. Sending a Message to Another Agent
+Use the `send-msg.js` script to send a message to a specific agent:
 ```bash
-echo -n "YOUR_TEXT_HERE" | clip.exe
+node ~/.gemini/config/plugins/abc/skills/copy/send-msg.js "Message content here" --recipient="surface95-agent" --type="prompt"
 ```
+*   `--recipient`: Set to the target agent ID (e.g., `surface95-agent`), `"orchestrator"` to target the orchestrator, or omit/set to `"*"` for broadcast.
+*   `--type`: The type of message (`prompt`, `status`, `result`, or `abort`).
 
-##### 3. macOS (zsh/bash)
-If running on macOS:
+> [!IMPORTANT]
+> **PREFIX ALLOWLIST COMPATIBILITY:** Always execute the `send-msg.js` script directly as a single command starting with `node`. Do **NOT** chain commands with semicolons, set variables, or pipe input at the start. Running it directly allows the CLI to match the static prefix (`node ~/.gemini/.../send-msg.js`) so the user can whitelist it permanently.
+
+### 2. Awaiting a Response (Listen Once)
+To wait for a response without polling, run the `listen-once.js` script as a background task. Since it is run in the background, when it receives a message it will print it to stdout and exit. This will trigger a reactive wakeup in the Antigravity CLI and deliver the message directly to your context.
+
+**Always run the listen command immediately after sending a message if you are waiting for a response:**
 ```bash
-echo -n "YOUR_TEXT_HERE" | pbcopy
+# Start the listener in the background
+node ~/.gemini/config/plugins/abc/skills/copy/listen-once.js --agent-id="YOUR_AGENT_ID" --type="prompt"
 ```
+*   `--agent-id`: Your unique agent ID (to identify yourself to the broker and match the recipient field of incoming messages).
+*   `--type`: (Optional) filter to only wake up for a specific message type.
+*   `--timeout`: (Optional) timeout in milliseconds before exiting with an error (defaults to `300000` / 5 minutes).
 
-##### 4. Linux (with Display Server)
-If running on desktop Linux with a display server, select the first available:
-- **Wayland**: `echo -n "YOUR_TEXT_HERE" | wl-copy`
-- **X11 (xclip)**: `echo -n "YOUR_TEXT_HERE" | xclip -selection clipboard`
-- **X11 (xsel)**: `echo -n "YOUR_TEXT_HERE" | xsel --clipboard --input`
+**Important**: After executing the background listener command, stop calling any more tools. The system will automatically wake you up when the listener receives a message and exits.
 
-##### 5. Remote SSH Session
-If running on a remote server with an active `$SSH_TTY` terminal:
-```bash
-printf "\033]52;c;$(echo -n "YOUR_TEXT_HERE" | base64 | tr -d '\r\n')\007" > "$SSH_TTY"
-```
-
-##### 6. Restricted Sandboxes (Docker/Containers)
-If running inside a Docker container or sandbox without direct host device access, write the OSC 52 sequence to the shared bypass channels in the workspace directory:
-```bash
-printf "\033]52;c;$(echo -n "YOUR_TEXT_HERE" | base64 | tr -d '\r\n')\007" > .clipboard_bypass
-```
-*(Optionally, write to `.clipboard_pipe` if the named pipe exists)*
-
----
-
-### Step 3: Verify and Confirm
-Notify the user that the text has been successfully copied to their clipboard, indicating the exact copy method reported by the helper script's `Copied via <transport>` stderr output.
+> [!IMPORTANT]
+> **CONNECTION LOSS HANDLED:** If the background listener task exits with a warning or error indicating the connection was closed (e.g. containing `[Disconnected] Connection to the broker was closed before a message was received`), do **NOT** attempt to troubleshoot, read task logs, write connection scripts, or run network diagnostics. Simply inform the user that the connection to the broker was lost/closed and stop execution.
 
