@@ -23,27 +23,29 @@ node ~/.gemini/config/plugins/abc/skills/copy/copy.js "the text to copy"
 When you need to send messages to other agents or wait for responses on the Tailscale WebSocket bridge (for multi-agent coordination or long-running dialogues):
 
 ### 1. Sending a Message to Another Agent
-Use the `send-msg.js` script to send a message to a specific agent:
+Use the `send-msg.js` script to send a message to a specific agent (supports both positional message text and `--content="..."` / `--message="..."`):
 ```bash
 node ~/.gemini/config/plugins/abc/skills/copy/send-msg.js "Message content here" --recipient="surface95-agent" --type="prompt"
 ```
+*   `--content`: (Optional) Explicit message content flag (or pass the message as a positional string argument).
 *   `--recipient`: Set to the target agent ID (e.g., `surface95-agent`), `"orchestrator"` to target the orchestrator, or omit/set to `"*"` for broadcast.
 *   `--type`: The type of message (`prompt`, `status`, `result`, or `abort`).
 
 > [!IMPORTANT]
 > **PREFIX ALLOWLIST COMPATIBILITY:** Always execute the `send-msg.js` script directly as a single command starting with `node`. Do **NOT** chain commands with semicolons, set variables, or pipe input at the start. Running it directly allows the CLI to match the static prefix (`node ~/.gemini/.../send-msg.js`) so the user can whitelist it permanently.
 
-### 2. Awaiting a Response (Listen Once)
-To wait for a response without polling, run the `listen-once.js` script as a background task. Since it is run in the background, when it receives a message it will print it to stdout and exit. This will trigger a reactive wakeup in the Antigravity CLI and deliver the message directly to your context.
+### 2. Awaiting a Response (Listen Once vs. Persistent Stream)
+To wait for a response without polling, run the `listen-once.js` script as a background task. When it receives a message, it prints it to stdout and exits, triggering a reactive wakeup in the Antigravity CLI and delivering the message directly to your context. (The broker also maintains a 10-minute ephemeral offline mailbox per agent ID so messages sent between `listen-once` invocations are automatically queued and delivered upon reconnect.)
 
 **Always run the listen command immediately after sending a message if you are waiting for a response:**
 ```bash
-# Start the listener in the background
+# Start the one-shot listener in the background (wakes you up on the next message)
 node ~/.gemini/config/plugins/abc/skills/copy/listen-once.js --agent-id="YOUR_AGENT_ID" --type="prompt"
 ```
 *   `--agent-id`: Your unique agent ID (to identify yourself to the broker and match the recipient field of incoming messages).
 *   `--type`: (Optional) filter to only wake up for a specific message type.
 *   `--timeout`: (Optional) timeout in milliseconds before exiting with an error (defaults to `300000` / 5 minutes).
+*   `--stream`: (Optional) keep the listener running persistently (`IsDaemon: true`) without exiting after 1 message; appends every incoming message as JSONL to `~/.gemini/config/plugins/abc/inbox.jsonl` (or `--log-file=/path/to/file.jsonl`).
 
 **Important**: After executing the background listener command, stop calling any more tools. The system will automatically wake you up when the listener receives a message and exits.
 

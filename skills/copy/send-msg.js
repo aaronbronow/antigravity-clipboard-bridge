@@ -29,9 +29,13 @@ if (!hasArgs && fs.existsSync(pendingMsgPath)) {
     }
 }
 else {
-    content = args.find(a => !a.startsWith('--')) || '';
-    recipient = args.find(a => a.startsWith('--recipient='))?.split('=')[1] || '*';
-    msgType = args.find(a => a.startsWith('--type='))?.split('=')[1] || 'broadcast';
+    const extractFlag = (prefix) => {
+        const arg = args.find(a => a.startsWith(prefix));
+        return arg ? arg.slice(prefix.length) : undefined;
+    };
+    content = extractFlag('--content=') || extractFlag('--message=') || args.filter(a => !a.startsWith('--')).join(' ') || '';
+    recipient = extractFlag('--recipient=') || '*';
+    msgType = extractFlag('--type=') || 'broadcast';
 }
 if (!content) {
     console.error('Error: Message content is required');
