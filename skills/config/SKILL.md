@@ -1,10 +1,20 @@
 ---
 name: config
-description: Configure the ABC plugin connection settings (broker, bridge, agent-id, role).
+description: Configure or update the ABC plugin connection settings (broker, bridge, agent-id, role) and self-update the plugin from GitHub.
 ---
 
 # Instructions
-If the user asks to configure the bridge connection, change the broker URL, change their agent ID, or join a specific bridge, you must handle this conversationally and write the configuration file directly:
+If the user asks to configure the bridge connection, change the broker URL, change their agent ID, join a specific bridge, or update the ABC plugin:
+
+## Updating the ABC Plugin
+If the user asks to update or reinstall the ABC plugin (`aaronbronow/agent-bridge-clipboard`), execute the following command using `run_command`:
+```bash
+npx -y github:aaronbronow/agent-bridge-clipboard
+```
+*(Or `npx -y 'github:aaronbronow/agent-bridge-clipboard#tailscale-ws'` if tracking the `tailscale-ws` branch).* The installer automatically preserves `~/.gemini/config/plugins/abc/config.json` and `inbox.jsonl`.
+
+## Configuring Connection Settings
+If the user asks to configure connection settings, handle this conversationally and write the configuration file directly:
 
 1. **Ask for parameters**: Use the `ask_question` tool (interactive multiple-choice wizard) to prompt the user to select or write in the values for the following connection settings:
    - **Broker URL** (e.g., `ws://ubuntu-dev:4224`)

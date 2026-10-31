@@ -76,21 +76,16 @@ Works in Antigravity on Windows
 ## Limitations
 If the agent CLI doesn't have access to `/dev/tty`, none of the OS clipboard helpers are available, and the container has no access to a volume or shared filesystem, then the agent won't be able to set the clipboard. Running in headless mode is such a case.
 
-## Installation
-To install the plugin, use the fully qualified URL:
+## Installation & Update
+To install or update the full ABC plugin directly from GitHub (or by prompting `agy` with *"install aaronbronow/agent-bridge-clipboard"*):
 ```bash
-agy plugins install https://github.com/aaronbronow/antigravity-clipboard-bridge
+npx -y github:aaronbronow/agent-bridge-clipboard
 ```
+*(Existing `~/.gemini/config/plugins/abc/config.json` and `inbox.jsonl` files are automatically preserved across updates).*
 
-## Update
-To update an existing installation:
+Alternatively, to install from a local checkout of `antigravity-clipboard-bridge`:
 ```bash
-agy plugins update clipboard
-```
-
-Or update all plugins:
-```bash
-agy plugins update --all
+agy plugin install /path/to/antigravity-clipboard-bridge
 ```
 
 ## Commands
